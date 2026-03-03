@@ -3,23 +3,43 @@
   become: yes
   tasks:
     - name: Install required dependencies
-      dnf:
+      ansible.builtin.dnf:
         name: [curl, gnupg2]
         state: present
 
+    - name: Reset default Node.js module stream
+      # Oracle Linux 9 often has a built-in nodejs module that overrides external repos
+      ansible.builtin.command: dnf module reset nodejs -y
+      register: module_reset
+      changed_when: "'Resetting' in module_reset.stdout"
+
     - name: Download NodeSource setup script for Node 22
-      get_url:
-        url: https://rpm.nodesource.com/setup_22.x
+      ansible.builtin.get_url:
+        url: https://rpm.nodesource.com
         dest: /tmp/nodesource_setup.sh
         mode: '0755'
 
     - name: Run NodeSource setup script
-      command: /tmp/nodesource_setup.sh
+      # Executing with 'bash' bypasses /tmp 'noexec' mount restrictions
+      ansible.builtin.command: bash /tmp/nodesource_setup.sh
       register: nodesource_setup
       changed_when: nodesource_setup.rc == 0
 
     - name: Install specific Node.js version 22.16.0
-      dnf:
+      ansible.builtin.dnf:
+        # Appending the exact version ensures the specific package is selected
         name: nodejs-22.16.0
         state: present
-        disable_plugin: [subscription-manager] # Optional: reduces noise on OL
+        disable_plugin: [subscription-manager]
+      # Using 'allow_erasing' may be needed if a newer nodejs is already installed
+      # name: nodejs-22.16.0
+      # allow_erasing: yes 
+
+    - name: Verify Node.js version
+      ansible.builtin.command: node -v
+      register: node_version
+      changed_when: false
+
+    - name: Show installed version
+      ansible.builtin.debug:
+        msg: "Installed Node.js version: {{ node_version.stdout }}"
