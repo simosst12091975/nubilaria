@@ -1,46 +1,46 @@
 ---
-- name: Install Nginx 1.22.1 (Offline Method)
+- name: Finalize Nginx 1.22.1 Installation
   hosts: all
   become: yes
 
   tasks:
-    - name: Clean up old repo files to prevent DNF metadata errors
-      ansible.builtin.file:
-        path: "{{ item }}"
-        state: absent
-      loop:
-        - /etc/yum.repos.d/nginx.repo
-        - /etc/yum.repos.d/nginx-stable.repo
-
-    - name: Disable default OS nginx module
-      ansible.builtin.shell: dnf -y module disable nginx
-      register: disable_module
-      changed_when: "'Disabling' in disable_module.stdout"
-      failed_when: false
-
-    - name: Download NGINX RPM to Semaphore Runner
+    - name: Download Nginx RPM to Semaphore Runner
       delegate_to: localhost
       become: no
       ansible.builtin.get_url:
         url: "https://nginx.org"
         dest: "/tmp/nginx-1.22.1.rpm"
-      # If your Semaphore runner also has no internet, you must 
-      # manually place this file in your git repo and use 'copy' instead.
+      register: rpm_download
+      ignore_errors: yes
 
-    - name: Copy RPM to target server
+    - name: Fail if RPM could not be downloaded
+      fail:
+        msg: "Semaphore runner cannot reach nginx.org. Please upload the RPM to your Git repo manually."
+      when: rpm_download is failed and not query('file', '/tmp/nginx-1.22.1.rpm')
+
+    - name: Transfer RPM to target server
       ansible.builtin.copy:
         src: "/tmp/nginx-1.22.1.rpm"
         dest: "/tmp/nginx-1.22.1.rpm"
         mode: '0644'
 
-    - name: Install Nginx from local file
+    - name: Install Nginx from the transferred file
       ansible.builtin.dnf:
         name: "/tmp/nginx-1.22.1.rpm"
         state: present
         disable_gpg_check: yes
 
-    - name: Ensure Nginx is started and enabled
+    - name: Start and Enable Nginx
       ansible.builtin.systemd:
         name: nginx
         state: started
         enabled: yes
+
+    - name: Verify Version
+      ansible.builtin.command: nginx -v
+      register: nginx_ver
+      changed_when: false
+
+    - name: Print Version Output
+      debug:
+        var: nginx_ver.stderr
