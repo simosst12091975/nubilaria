@@ -3,25 +3,26 @@
   hosts: all
   become: yes
   vars:
-    # Official NGINX Role variables
     nginx_version: "1.22.1"
     nginx_type: "stable"
     nginx_manage_repo: true
-    # For Oracle/RHEL 9, specify the exact package version string
-    # If "1.22.1" alone fails, try "1.22.1-1.el9.ngx"
-    nginx_package_name: "nginx-1.22.1"
 
   tasks:
+    - name: REMOVE BROKEN REPO FILE FIRST
+      ansible.builtin.file:
+        path: /etc/yum.repos.d/nginx.repo
+        state: absent
+
+    - name: Disable default OS nginx module
+      ansible.builtin.shell: dnf -y module disable nginx
+      register: disable_module
+      changed_when: "'Disabling' in disable_module.stdout"
+      failed_when: false
+
     - name: Install yum-utils
       ansible.builtin.dnf:
         name: yum-utils
         state: present
-
-    - name: Disable default OS nginx module
-      # This prevents Oracle Linux AppStream from overriding the official repo
-      ansible.builtin.shell: dnf -y module disable nginx
-      register: disable_module
-      changed_when: "'Disabling' in disable_module.stdout"
 
     - name: Deploy Nginx using official role
       include_role:
