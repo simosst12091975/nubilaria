@@ -1,13 +1,10 @@
 ---
-- name: Install Nginx 1.22.1 on Oracle Linux 9 (Direct RPM)
+- name: Install Nginx 1.22.1 (Offline Method)
   hosts: all
   become: yes
-  vars:
-    # Direct link to the official NGINX 1.22.1 RPM for RHEL/Oracle 9
-    nginx_rpm_url: "https://nginx.org"
 
   tasks:
-    - name: Clean up broken repo files to stop DNF crashes
+    - name: Clean up old repo files to prevent DNF metadata errors
       ansible.builtin.file:
         path: "{{ item }}"
         state: absent
@@ -21,11 +18,26 @@
       changed_when: "'Disabling' in disable_module.stdout"
       failed_when: false
 
-    - name: Install Nginx 1.22.1 directly from RPM URL
+    - name: Download NGINX RPM to Semaphore Runner
+      delegate_to: localhost
+      become: no
+      ansible.builtin.get_url:
+        url: "https://nginx.org"
+        dest: "/tmp/nginx-1.22.1.rpm"
+      # If your Semaphore runner also has no internet, you must 
+      # manually place this file in your git repo and use 'copy' instead.
+
+    - name: Copy RPM to target server
+      ansible.builtin.copy:
+        src: "/tmp/nginx-1.22.1.rpm"
+        dest: "/tmp/nginx-1.22.1.rpm"
+        mode: '0644'
+
+    - name: Install Nginx from local file
       ansible.builtin.dnf:
-        name: "{{ nginx_rpm_url }}"
+        name: "/tmp/nginx-1.22.1.rpm"
         state: present
-        disable_gpg_check: yes # Bypasses the GPG key download issue
+        disable_gpg_check: yes
 
     - name: Ensure Nginx is started and enabled
       ansible.builtin.systemd:
