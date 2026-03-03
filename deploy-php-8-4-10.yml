@@ -31,3 +31,9 @@
           - php-mbstring
           - php-gd
         state: latest
+
+    - name: Start and enable php-fpm service
+      ansible.builtin.service:
+        name: php-fpm
+        state: started
+        enabled: yes
