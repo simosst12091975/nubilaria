@@ -1,0 +1,33 @@
+- name: Install PHP 8.4.10 on Oracle Linux 9
+  hosts: all
+  become: yes
+  tasks:
+    - name: Install EPEL and Remi repositories
+      dnf:
+        name: 
+          - https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
+          - https://rpms.remirepo.net/enterprise/remi-release-9.rpm
+        state: present
+        disable_gpg_check: yes
+
+    - name: Reset existing PHP module
+      command: dnf module reset php -y
+      register: php_reset
+      changed_when: php_reset.rc == 0
+
+    - name: Switch to PHP 8.4 Remi module
+      command: dnf module switch-to php:remi-8.4/common -y
+      register: php_switch
+      changed_when: php_switch.rc == 0
+
+    - name: Install PHP 8.4 and common extensions
+      dnf:
+        name:
+          - php
+          - php-cli
+          - php-fpm
+          - php-common
+          - php-xml
+          - php-mbstring
+          - php-gd
+        state: latest
