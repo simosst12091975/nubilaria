@@ -7,7 +7,7 @@
     nginx_type: "stable"
     nginx_manage_repo: true
     # ADD THIS LINE TO FIX THE FINGERPRINT ERROR:
-    nginx_gpg_fingerprint: "573BFD6B3D8FBC641079A6ABABF5BD827BD9BF62"
+    nginx_gpg_fingerprint: "8540A6F18833A80E9C1653A42FD21310B49F6B46"
 
   tasks:
     - name: Remove broken repo file
