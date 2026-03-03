@@ -23,7 +23,7 @@
       dnf:
         name: nginx-1.22.1
         state: present
-        allow_erasing: yes
+        allowerasing: yes
 
     - name: Start and enable Nginx
       systemd:
