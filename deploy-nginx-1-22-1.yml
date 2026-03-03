@@ -5,25 +5,34 @@
   vars:
     nginx_version: "1.22.1"
     nginx_type: "stable"
-    # Set to false to skip the role's broken GPG check
-    nginx_manage_repo: false 
+    nginx_manage_repo: false # Skip the broken internal role check
 
   tasks:
+    - name: Clean up existing NGINX repo files
+      ansible.builtin.file:
+        path: /etc/yum.repos.d/nginx.repo
+        state: absent
+
     - name: Disable default OS nginx module
       ansible.builtin.shell: dnf -y module disable nginx
       register: disable_module
       changed_when: "'Disabling' in disable_module.stdout"
       failed_when: false
 
-    - name: Manually add correct NGINX repository
+    - name: Manually add correct NGINX RHEL 9 repository
       ansible.builtin.yum_repository:
         name: nginx-stable
         description: nginx stable repo
-        baseurl: https://nginx.org
+        # Using the official RHEL 9 path which is correct for Oracle 9
+        baseurl: "https://nginx.org"
         gpgcheck: yes
         enabled: yes
-        gpgkey: https://nginx.org
+        gpgkey: "https://nginx.org"
         module_hotfixes: true
+
+    - name: Force metadata clear to fix 'All mirrors tried'
+      ansible.builtin.command: dnf clean all
+      changed_when: true
 
     - name: Deploy Nginx using official role
       include_role:
