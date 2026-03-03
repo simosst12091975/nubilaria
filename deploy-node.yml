@@ -1,0 +1,25 @@
+- name: Install Node.js 22.16.0 on Oracle Linux 9
+  hosts: all
+  become: yes
+  tasks:
+    - name: Install required dependencies
+      dnf:
+        name: [curl, gnupg2]
+        state: present
+
+    - name: Download NodeSource setup script for Node 22
+      get_url:
+        url: https://rpm.nodesource.com/setup_22.x
+        dest: /tmp/nodesource_setup.sh
+        mode: '0755'
+
+    - name: Run NodeSource setup script
+      command: /tmp/nodesource_setup.sh
+      register: nodesource_setup
+      changed_when: nodesource_setup.rc == 0
+
+    - name: Install specific Node.js version 22.16.0
+      dnf:
+        name: nodejs-22.16.0
+        state: present
+        disable_plugin: [subscription-manager] # Optional: reduces noise on OL
