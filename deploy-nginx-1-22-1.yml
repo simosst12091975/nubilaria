@@ -1,46 +1,45 @@
 ---
-- name: Finalize Nginx 1.22.1 Installation
+- name: Install Nginx 1.22.1 on RHEL/Derivatives
   hosts: all
   become: yes
-
   tasks:
-    - name: Download Nginx RPM to Semaphore Runner
-      delegate_to: localhost
-      become: no
-      ansible.builtin.get_url:
-        url: "https://nginx.org"
-        dest: "/tmp/nginx-1.22.1.rpm"
-      register: rpm_download
-      ignore_errors: yes
-
-    - name: Fail if RPM could not be downloaded
-      fail:
-        msg: "Semaphore runner cannot reach nginx.org. Please upload the RPM to your Git repo manually."
-      when: rpm_download is failed and not query('file', '/tmp/nginx-1.22.1.rpm')
-
-    - name: Transfer RPM to target server
-      ansible.builtin.copy:
-        src: "/tmp/nginx-1.22.1.rpm"
-        dest: "/tmp/nginx-1.22.1.rpm"
-        mode: '0644'
-
-    - name: Install Nginx from the transferred file
-      ansible.builtin.dnf:
-        name: "/tmp/nginx-1.22.1.rpm"
+    - name: Install yum-utils
+      yum:
+        name: yum-utils
         state: present
-        disable_gpg_check: yes
 
-    - name: Start and Enable Nginx
-      ansible.builtin.systemd:
+    - name: Configure Nginx Repository
+      copy:
+        dest: /etc/yum.repos.d/nginx.repo
+        content: |
+          [nginx-stable]
+          name=nginx stable repo
+          baseurl=https://nginx.org
+          gpgcheck=1
+          enabled=1
+          gpgkey=https://nginx.org
+          module_hotfixes=true
+
+    - name: Import Nginx GPG Key
+      rpm_key:
+        state: present
+        key: https://nginx.org
+
+    - name: Install Nginx 1.22.1
+      yum:
+        name: nginx-1.22.1
+        state: present
+        update_cache: yes
+
+    - name: Ensure Nginx is started and enabled
+      service:
         name: nginx
         state: started
         enabled: yes
 
-    - name: Verify Version
-      ansible.builtin.command: nginx -v
-      register: nginx_ver
-      changed_when: false
-
-    - name: Print Version Output
-      debug:
-        var: nginx_ver.stderr
+    - name: Open HTTP port in firewalld (optional)
+      firewalld:
+        service: http
+        permanent: yes
+        state: enabled
+      ignore_errors: yes
