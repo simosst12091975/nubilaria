@@ -1,0 +1,17 @@
+---
+- name: Check SSH Service Existence and Status
+  hosts: all
+  gather_facts: yes
+  tasks:
+    - name: Gather service facts
+      ansible.builtin.service_facts:
+
+    - name: Verify if sshd service exists
+      ansible.builtin.debug:
+        msg: "SSH service (sshd) is {{ ansible_facts.services['sshd.service'].state | default('NOT FOUND') }}"
+
+    - name: Fail if sshd is not running
+      ansible.builtin.fail:
+        msg: "CRITICAL: sshd service is missing or stopped!"
+      when: 
+        - "ansible_facts.services['sshd.service'] is not defined or ansible_facts.services['sshd.service'].state != 'running'"
