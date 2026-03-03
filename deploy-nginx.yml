@@ -1,0 +1,32 @@
+- name: Install Nginx 1.22.1 on Oracle Linux 9
+  hosts: all
+  become: yes
+  tasks:
+    - name: Install yum-utils
+      dnf:
+        name: yum-utils
+        state: present
+
+    - name: Add Nginx official repository
+      copy:
+        dest: /etc/yum.repos.d/nginx.repo
+        content: |
+          [nginx-stable]
+          name=nginx stable repo
+          baseurl=http://nginx.org
+          gpgcheck=1
+          enabled=1
+          gpgkey=https://nginx.org
+          module_hotfixes=true
+
+    - name: Install specific Nginx version 1.22.1
+      dnf:
+        name: nginx-1.22.1
+        state: present
+        allow_erasing: yes
+
+    - name: Start and enable Nginx
+      systemd:
+        name: nginx
+        state: started
+        enabled: yes
