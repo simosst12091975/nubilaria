@@ -1,1 +1,23 @@
-what it is
+# --- Ansible Specific ---
+*.retry           # Ansible retry files created on task failure
+*.log             # Local log files
+.vault_pass       # DO NOT commit your Ansible Vault password file
+*.pem             # Private keys (should be in Semaphore Key Store instead)
+roles/external/   # If you download roles dynamically (e.g., via requirements.yml)
+
+# --- Python / Environment ---
+__pycache__/      # Python bytecode
+*.py[cod]
+.venv/            # Local virtual environments
+.env              # Local environment variables
+
+# --- Editor & OS ---
+.idea/            # PyCharm/IntelliJ settings
+.vscode/          # VS Code settings
+*.swp             # Vim swap files
+.DS_Store         # macOS metadata files
+Thumbs.db         # Windows metadata files
+
+# --- Semaphore Specific (Optional) ---
+# If you run Semaphore locally for testing
+inventory.lock    # Any local lock files
