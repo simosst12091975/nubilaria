@@ -18,6 +18,8 @@
           enabled=1
           gpgkey=https://nginx.org
           module_hotfixes=true
+      include_role:
+        name: nginxinc.nginx_core.nginx
 
     - name: Install specific Nginx version 1.22.1
       dnf:
