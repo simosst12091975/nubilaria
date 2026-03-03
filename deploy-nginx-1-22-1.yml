@@ -5,26 +5,25 @@
   vars:
     nginx_version: "1.22.1"
     nginx_type: "stable"
-    nginx_manage_repo: true
-    # Use the exact variable name defined in the collection's RedHat tasks:
-    nginx_signing_key_fingerprint: "8540A6F18833A80E9C1653A42FD21310B49F6B46"
+    # Set to false to skip the role's broken GPG check
+    nginx_manage_repo: false 
 
   tasks:
-    - name: Remove broken repo file
-      ansible.builtin.file:
-        path: /etc/yum.repos.d/nginx.repo
-        state: absent
-
     - name: Disable default OS nginx module
       ansible.builtin.shell: dnf -y module disable nginx
       register: disable_module
       changed_when: "'Disabling' in disable_module.stdout"
       failed_when: false
 
-    - name: Install yum-utils
-      ansible.builtin.dnf:
-        name: yum-utils
-        state: present
+    - name: Manually add correct NGINX repository
+      ansible.builtin.yum_repository:
+        name: nginx-stable
+        description: nginx stable repo
+        baseurl: https://nginx.org
+        gpgcheck: yes
+        enabled: yes
+        gpgkey: https://nginx.org
+        module_hotfixes: true
 
     - name: Deploy Nginx using official role
       include_role:
