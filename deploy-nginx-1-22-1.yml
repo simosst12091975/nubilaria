@@ -6,6 +6,7 @@
       dnf:
         name: yum-utils
         state: present
+      become: yes
 
     - name: Add Nginx official repository
       copy:
