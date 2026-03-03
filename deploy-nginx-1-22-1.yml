@@ -8,7 +8,7 @@
         name: yum-utils
         state: present
 
-    - name: Configure Nginx Repository
+    - name: Create Nginx repository file
       copy:
         dest: /etc/yum.repos.d/nginx.repo
         content: |
@@ -19,27 +19,20 @@
           enabled=1
           gpgkey=https://nginx.org
           module_hotfixes=true
-
-    - name: Import Nginx GPG Key
-      rpm_key:
-        state: present
-        key: https://nginx.org
+        owner: root
+        group: root
+        mode: '0644'
 
     - name: Install Nginx 1.22.1
       yum:
         name: nginx-1.22.1
         state: present
+        # This flag tells yum to ignore the manual GPG prompt if the key is in the repo file
+        disable_gpg_check: no 
         update_cache: yes
 
-    - name: Ensure Nginx is started and enabled
+    - name: Start and Enable Nginx
       service:
         name: nginx
         state: started
         enabled: yes
-
-    - name: Open HTTP port in firewalld (optional)
-      firewalld:
-        service: http
-        permanent: yes
-        state: enabled
-      ignore_errors: yes
