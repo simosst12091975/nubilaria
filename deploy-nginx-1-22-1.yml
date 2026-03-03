@@ -6,9 +6,11 @@
     nginx_version: "1.22.1"
     nginx_type: "stable"
     nginx_manage_repo: true
+    # ADD THIS LINE TO FIX THE FINGERPRINT ERROR:
+    nginx_gpg_fingerprint: "8540A6F18833A80E9C1653A42FD21310B49F6B46"
 
   tasks:
-    - name: REMOVE BROKEN REPO FILE FIRST
+    - name: Remove broken repo file
       ansible.builtin.file:
         path: /etc/yum.repos.d/nginx.repo
         state: absent
