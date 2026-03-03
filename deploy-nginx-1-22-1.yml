@@ -1,38 +1,39 @@
 ---
-- name: Install Nginx 1.22.1 on RHEL/Derivatives
+- name: Deploy Nginx 1.22.1 on Oracle Linux 9
   hosts: all
-  become: yes
+  become: true
   tasks:
-    - name: Install yum-utils
-      yum:
-        name: yum-utils
+    - name: Remove existing Nginx repository files
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /etc/yum.repos.d/nginx.repo
+        - /etc/yum.repos.d/nginx-stable.repo
+
+    - name: Remove Nginx GPG signing keys from RPM DB
+      ansible.builtin.shell: |
+        rpm -qa gpg-pubkey* --qf "%{NAME}-%{VERSION}-%{RELEASE}\t%{SUMMARY}\n" | \
+        grep -i "nginx" | awk '{print $1}' | xargs -r rpm -e
+      changed_when: false
+
+    - name: Clean DNF cache to ensure fresh metadata
+      ansible.builtin.command: dnf clean all
+      changed_when: false
+
+    - name: Enable Nginx 1.22 module stream
+      ansible.builtin.dnf:
+        name: "@nginx:1.22"
         state: present
 
-    - name: Create Nginx repository file
-      copy:
-        dest: /etc/yum.repos.d/nginx.repo
-        content: |
-          [nginx-stable]
-          name=nginx stable repo
-          baseurl=https://nginx.org
-          gpgcheck=1
-          enabled=1
-          gpgkey=https://nginx.org
-          module_hotfixes=true
-        owner: root
-        group: root
-        mode: '0644'
-
-    - name: Install Nginx 1.22.1
-      yum:
-        name: nginx-1.22.1
+    - name: Install specific Nginx version 1.22.1
+      ansible.builtin.dnf:
+        name: "nginx-1.22.1"
         state: present
-        # This flag tells yum to ignore the manual GPG prompt if the key is in the repo file
-        disable_gpg_check: no 
-        update_cache: yes
+        disable_gpg_check: false
 
-    - name: Start and Enable Nginx
-      service:
+    - name: Start and enable Nginx service
+      ansible.builtin.systemd:
         name: nginx
         state: started
-        enabled: yes
+        enabled: true
