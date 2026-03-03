@@ -2,11 +2,10 @@
   hosts: all
   become: yes
   tasks:
-    - name: Install yum-utils
+    - name: Install dnf-utils
       dnf:
-        name: yum-utils
+        name: dnf-utils
         state: present
-      become: yes
 
     - name: Add Nginx official repository
       copy:
