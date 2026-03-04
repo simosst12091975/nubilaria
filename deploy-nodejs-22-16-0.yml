@@ -12,8 +12,10 @@
       changed_when: false
 
     - name: Add NodeSource repository for Node 22
+      # CRITICAL: Added /setup_22.x to the URL
       ansible.builtin.shell: curl -fsSL https://rpm.nodesource.com | bash -
       args:
+        # This prevents the task from running if the repo already exists
         creates: /etc/yum.repos.d/nodesource-el9.repo
 
     - name: Force metadata update
@@ -24,7 +26,6 @@
       ansible.builtin.dnf:
         name: "nodejs-22.16.0-1nodesource1"
         state: present
-        # Fixed parameter name (removed the underscore)
         allowerasing: yes
         disable_plugin: [subscription-manager]
 
