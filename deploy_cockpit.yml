@@ -1,0 +1,32 @@
+---
+- name: Deploy Cockpit on Oracle Linux 9
+  hosts: all
+  become: true
+  tasks:
+    - name: Install Cockpit package
+      ansible.builtin.dnf:
+        name: cockpit
+        state: present
+
+    - name: Copy custom PAM file from repo to /etc/pam.d/cockpit
+      ansible.builtin.copy:
+        # Use the relative path from your repo root
+        src: tmp/cockpit
+        dest: /etc/pam.d/cockpit
+        owner: root
+        group: root
+        mode: '0644'
+        backup: yes
+
+    - name: Enable and start Cockpit socket
+      ansible.builtin.systemd:
+        name: cockpit.socket
+        enabled: yes
+        state: started
+
+    - name: Allow Cockpit through firewall
+      ansible.posix.firewalld:
+        service: cockpit
+        permanent: true
+        state: enabled
+        immediate: true
