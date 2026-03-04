@@ -13,7 +13,7 @@
 
     - name: Add NodeSource repository for Node 22
       # CRITICAL: Added /setup_22.x to the URL
-      ansible.builtin.shell: curl -fsSL https://rpm.nodesource.com | bash -
+      ansible.builtin.shell: curl -fsSL https://rpm.nodesource.com/setup_22.x | sudo bash -
       args:
         # This prevents the task from running if the repo already exists
         creates: /etc/yum.repos.d/nodesource-el9.repo
