@@ -8,22 +8,24 @@
         state: absent
 
     - name: Reset Node.js module stream
-      # Essential for Oracle Linux 9 to bypass default AppStream versions
       ansible.builtin.command: dnf module reset nodejs -y
       changed_when: false
 
     - name: Add NodeSource repository for Node 22
-      # Fixed URL for the setup script
-      ansible.builtin.shell: curl -fsSL https://rpm.nodesource.com/setup_22.x | bash -
+      ansible.builtin.shell: curl -fsSL https://rpm.nodesource.com | bash -
       args:
         creates: /etc/yum.repos.d/nodesource-el9.repo
 
+    - name: Force metadata update
+      ansible.builtin.command: dnf clean expire-cache
+      changed_when: false
+
     - name: Install pinned version 22.16.0
       ansible.builtin.dnf:
-        # Standard pinning format for NodeSource on EL9
-        name: nodejs-22.16.0-1nodesource1
+        name: "nodejs-22.16.0-1nodesource1"
         state: present
-        allow_erasing: yes
+        # Fixed parameter name (removed the underscore)
+        allowerasing: yes
         disable_plugin: [subscription-manager]
 
     - name: Verify global installation
