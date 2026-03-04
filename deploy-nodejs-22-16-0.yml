@@ -1,0 +1,54 @@
+- name: Purge existing Node.js and Install 22.16.0
+  hosts: all
+  become: yes
+  tasks:
+    # --- STEP 1: REMOVE SYSTEM-WIDE INSTALLATIONS ---
+    - name: Remove nodejs package and its dependencies
+      ansible.builtin.dnf:
+        name: [nodejs, npm]
+        state: absent
+        autoremove: yes
+
+    - name: Clean DNF cache to remove old metadata
+      ansible.builtin.command: dnf clean all
+      changed_when: false
+
+    # --- STEP 2: REMOVE USER-LEVEL INSTALLATIONS (NVM) ---
+    - name: Find all user home directories
+      ansible.builtin.shell: "getent passwd | awk -F: '$3 >= 1000 {print $6}'"
+      register: user_homes
+      changed_when: false
+
+    - name: Remove .nvm and .npm folders from all users
+      ansible.builtin.file:
+        path: "{{ item }}/{{ folder }}"
+        state: absent
+      loop: "{{ user_homes.stdout_lines | product(['.nvm', '.npm', '.node-gyp']) | list }}"
+      loop_control:
+        label: "Removing {{ item.1 }} from {{ item.0 }}"
+      vars:
+        folder: "{{ item.1 }}"
+
+    # --- STEP 3: INSTALL EXACT VERSION 22.16.0 ---
+    - name: Reset Node.js module stream
+      ansible.builtin.command: dnf module reset nodejs -y
+      changed_when: false
+
+    - name: Add NodeSource repository
+      ansible.builtin.shell: curl -fsSL https://rpm.nodesource.com | bash -
+
+    - name: Install Node.js 22.16.0
+      ansible.builtin.dnf:
+        name: nodejs-22.16.0-1nodesource1
+        state: present
+        allow_erasing: yes
+        disable_plugin: [subscription-manager]
+
+    - name: Verify installation
+      ansible.builtin.command: node -v
+      register: node_version
+      changed_when: false
+
+    - name: Final check
+      ansible.builtin.debug:
+        msg: "System is now clean and running: {{ node_version.stdout }}"
